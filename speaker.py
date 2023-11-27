@@ -1,36 +1,25 @@
 import pandas as pd
 import speech_recognition as sr
-import networkx as nx
 from gtts import gTTS
 from playsound import playsound
 
 # Load Excel data
-excel_file_path = 'bus_routes.xlsx'  # 파일 경로를 실제 파일의 경로로 변경하세요.
+excel_file_path = 'suncheon_bus.xlsx'  # 파일 경로를 실제 파일의 경로로 변경하세요.
 df = pd.read_excel(excel_file_path)
 
-# Create a graph from the bus routes data
-G = nx.Graph()
-for _, row in df.iterrows():
-    route_stops = [stop.strip() for stop in row['노선 순서'].split(',')]
-    for i in range(len(route_stops) - 1):
-        G.add_edge(route_stops[i], route_stops[i+1], bus_number=row['버스번호'])
-
 def find_bus_numbers(source, destination):
-    try:
-        paths = list(nx.all_shortest_paths(G, source=source, target=destination))
-        bus_numbers = set(G[path[0]][path[1]]['bus_number'] for path in paths)
-        
-        if bus_numbers:
-            return f"출발지 {source}에서 목적지 {destination}까지 운행하는 버스 번호는 {', '.join(map(str, bus_numbers))}입니다."
-        else:
-            return "해당하는 운행하는 버스가 없습니다."
-    except nx.NetworkXNoPath:
-        return "해당하는 운행하는 버스가 없습니다."
+    matching_routes = df[df['노선순서'].apply(lambda x: source in x and destination in x)]
+    
+    if not matching_routes.empty:
+        bus_numbers = matching_routes['버스번호'].tolist()
+        return bus_numbers
+    else:
+        return None
 
 def listen(recognizer, microphone):
     with microphone as source:
         try:
-            print("무엇을 도와드릴까요?")
+            print("어디에서 어디로 가시려나요?")
             audio = recognizer.listen(source, timeout=5)
             text = recognizer.recognize_google(audio, language='ko')
             print(f'[나] {text}')
@@ -48,6 +37,10 @@ def speak(text):
     tts.save('output.mp3')
     playsound('output.mp3')
 
+def preprocess_location(location):
+    # 띄어쓰기 없이 인식하기 위해 띄어쓰기를 모두 제거
+    return location.replace(" ", "")
+
 recognizer = sr.Recognizer()
 microphone = sr.Microphone()
 
@@ -55,19 +48,23 @@ while True:
     user_input = listen(recognizer, microphone)
     
     if user_input:
-        if "에서" in user_input and "으로 갈 거야" in user_input:
+        if "에서" in user_input and "로" in user_input:
             source = user_input.split("에서")[0].strip()
-            destination = user_input.split("에서")[1].split("으로 갈 거야")[0].strip()
+            destination = user_input.split("에서")[1].split("로")[0].strip()
+            
+            # 띄어쓰기 없이 인식하도록 수정
+            source = preprocess_location(source)
+            destination = preprocess_location(destination)
+            
             print(f"출발지: {source}, 목적지: {destination}")
-            bus_info = find_bus_numbers(source, destination)
-            speak(bus_info)
-        elif "에서" in user_input and "로 갈 거야" in user_input:
-            source = user_input.split("에서")[0].strip()
-            destination = user_input.split("에서")[1].split("로 갈 거야")[0].strip()
-            print(f"출발지: {source}, 목적지: {destination}")
-            bus_info = find_bus_numbers(source, destination)
-            speak(bus_info)
+            bus_numbers = find_bus_numbers(source, destination)
+            
+            if bus_numbers:
+                bus_numbers_str = ", ".join(map(lambda x: f"{x}번", bus_numbers))
+                speak(f"{source}에서 {destination}까지 운행하는 버스 번호는 {bus_numbers_str} 버스입니다.")
+            else:
+                speak(f"{source}에서 {destination}까지 운행하는 버스가 없습니다.")
         else:
-            print("지원하지 않는 명령 또는 입력입니다.")
+            print("출발지와 목적지를 다시 말해주세요.")
     else:
         print("텍스트로 입력하세요.")
