@@ -25,7 +25,7 @@ def listen(recognizer, microphone):
             print(f'[나] {text}')
             return text
         except sr.UnknownValueError:
-            print('음성 인식 실패. 텍스트로 입력하세요.')
+            print('음성 인식 실패. 다시 시도해주세요.')
             return None
         except sr.RequestError as e:
             print(f'음성 인식 요청 실패: {e}')
@@ -61,10 +61,25 @@ while True:
             
             if bus_numbers:
                 bus_numbers_str = ", ".join(map(lambda x: f"{x}번", bus_numbers))
-                speak(f"{source}에서 {destination}까지 운행하는 버스 번호는 {bus_numbers_str} 버스입니다.")
+                speak(f"{source}에서 {destination}까지 운행하는 버스는 {bus_numbers_str} 버스입니다.")
+                
+        if "에서" in user_input and "으로" in user_input:
+            source = user_input.split("에서")[0].strip()
+            destination = user_input.split("에서")[1].split("으로")[0].strip()
+            
+            # 띄어쓰기 없이 인식하도록 수정
+            source = preprocess_location(source)
+            destination = preprocess_location(destination)
+            
+            print(f"출발지: {source}, 목적지: {destination}")
+            bus_numbers = find_bus_numbers(source, destination)
+            
+            if bus_numbers:
+                bus_numbers_str = ", ".join(map(lambda x: f"{x}번", bus_numbers))
+                speak(f"{source}에서 {destination}까지 운행하는 버스는 {bus_numbers_str} 버스입니다.")
             else:
                 speak(f"{source}에서 {destination}까지 운행하는 버스가 없습니다.")
         else:
             print("출발지와 목적지를 다시 말해주세요.")
     else:
-        print("텍스트로 입력하세요.")
+        print("음성으로 입력하세요.")
