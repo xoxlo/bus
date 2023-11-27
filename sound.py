@@ -4,7 +4,7 @@ import pandas as pd
 df = pd.read_excel('suncheon_bus.xlsx')
 
 # 데이터를 딕셔너리로 변환
-bus_stops = df.set_index('노선')['정류장'].apply(lambda x: x.split(',')).to_dict()
+bus_stops = df.set_index('버스번호')['노선순서'].apply(lambda x: x.split(',')).to_dict()
 
 # 음성 인식된 명령어를 처리하는 함수
 def process_command(command):
@@ -23,7 +23,7 @@ def process_command(command):
     return "해당하는 운행하는 버스가 없습니다."
 
 # 테스트
-user_command = "순천역에서 경찰서로 갈거야"
+user_command = "순천역에서 노두로 갈거야"
 response = process_command(user_command)
 print(response)
 

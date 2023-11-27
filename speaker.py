@@ -1,54 +1,69 @@
-import time
-import os
-import speech_recognition as st
+import pandas as pd
+import speech_recognition as sr
+import networkx as nx
 from gtts import gTTS
 from playsound import playsound
-basic = "무엇을 도와드릴까요?"
-# 음성인식 듣기(STT) : 내 음성을 텍스트로~
+
+# Load Excel data
+excel_file_path = 'suncheon_bus.xlsx'  # 파일 경로를 실제 파일의 경로로 변경하세요.
+df = pd.read_excel(excel_file_path)
+
+# Create a graph from the bus routes data
+G = nx.Graph()
+for _, row in df.iterrows():
+    route_stops = [stop.strip() for stop in row['노선순서'].split(',')]
+    for i in range(len(route_stops) - 1):
+        G.add_edge(route_stops[i], route_stops[i+1], bus_number=row['버스번호'])
+
+def find_bus_number(source, destination):
+    try:
+        path = nx.shortest_path(G, source=source, target=destination)
+        bus_number = G[path[0]][path[1]]['bus_number']
+        return f"출발지 {source}에서 목적지 {destination}까지 운행하는 버스는 {bus_number}번 버스입니다."
+    except nx.NetworkXNoPath:
+        return "해당하는 운행하는 버스가 없습니다."
+
 def listen(recognizer, microphone):
     with microphone as source:
-        speak(basic)
         try:
+            speak("버스 안내 시스템입니다.")
             audio = recognizer.listen(source, timeout=5)
             text = recognizer.recognize_google(audio, language='ko')
-            print('[나]' + text)
-            answer(text)
-        except st.UnknownValueError:
-            print('인식 실패')
-        except st.RequestError as e:
-            print('요청 실패: {0}'.format(e))
+            print(f'[나] {text}')
+            return text
+        except sr.UnknownValueError:
+            print('음성 인식 실패. 텍스트로 입력하세요.')
+            return None
+        except sr.RequestError as e:
+            print(f'음성 인식 요청 실패: {e}')
+            return None
 
-# 대답
-def answer(input_text):
-    answer_text = ''
-    if '안녕' in input_text:
-        answer_text = '안녕하세요? 반갑습니다.'
-    elif '조원이름' in input_text:
-        answer_text = '송창석,김경윤,김예진,이정호,이주현,장태영,황승훈. 이렇게 7명 있습니다.'
-    elif '상황' in input_text:
-        answer_text = '지금 동아리 상황은 조졌습니다.'
-    elif '고마워' in input_text:
-        answer_text = '별 말씀을요!'
-    elif '종료' in input_text:
-        answer_text = '다음에 또 만나요.'
-        exit()
-    else:
-        answer_text = '뭔 소리야 다시 말해줘'
-    speak(answer_text)
-
-# 소리내어 읽기(TTS)
 def speak(text):
-    print('[인공지능]' + text)
-    file_name = 'voice.mp3'
+    print(f'[인공지능] {text}')
     tts = gTTS(text=text, lang='ko')
-    tts.save(file_name)
-    playsound(file_name)
-    if os.path.exists(file_name):
-        os.remove(file_name)
+    tts.save('output.mp3')
+    playsound('output.mp3')
 
-r = st.Recognizer()
-m = st.Microphone()
+recognizer = sr.Recognizer()
+microphone = sr.Microphone()
 
 while True:
-    listen(r, m)
-    time.sleep(0.1)
+    user_input = listen(recognizer, microphone)
+    
+    if user_input:
+        if "에서" in user_input and "으로 갈 거야" in user_input:
+            source = user_input.split("에서")[0].strip()
+            destination = user_input.split("에서")[1].split("으로 갈 거야")[0].strip()
+            print(f"출발지: {source}, 목적지: {destination}")
+            bus_info = find_bus_number(source, destination)
+            speak(bus_info)
+        elif "에서" in user_input and "로 갈 거야" in user_input:
+            source = user_input.split("에서")[0].strip()
+            destination = user_input.split("에서")[1].split("로 갈 거야")[0].strip()
+            print(f"출발지: {source}, 목적지: {destination}")
+            bus_info = find_bus_number(source, destination)
+            speak(bus_info)
+        else:
+            print("지원하지 않는 명령 또는 입력입니다.")
+    else:
+        print("텍스트로 입력하세요.")
