@@ -47,42 +47,42 @@ def preprocess_location(location):
     # 띄어쓰기 없이 인식하기 위해 띄어쓰기를 모두 제거
     return location.replace(" ", "")
 
-recognizer = sr.Recognizer()
-microphone = sr.Microphone()
+recognizer = sr.Recognizer() # 마이크 입력 후 인식
+microphone = sr.Microphone() # 마이크 입력
 
 while True:
     user_input = listen(recognizer, microphone)
     
     if user_input:
-        if "에서" in user_input and "으로" in user_input:
-            source = user_input.split("에서")[0].strip()
-            destination = user_input.split("에서")[1].split("으로")[0].strip()
+        if "에서" in user_input and "으로" in user_input: # 음성이 '~에서 ~으로'라고 입력 되면
+            source = user_input.split("에서")[0].strip() # 출발지
+            destination = user_input.split("에서")[1].split("으로")[0].strip() # 목적지
             
             # 띄어쓰기 없이 인식하도록 수정
-            source = preprocess_location(source)
-            destination = preprocess_location(destination)
+            source = preprocess_location(source) # 음성인식으로 입력된 단어에서 공백을 없앰 - 출발지
+            destination = preprocess_location(destination) # 음성인식으로 입력된 단어에서 공백을 없앰 - 목적지
             
             print(f"출발지: {source}, 목적지: {destination}")
-            bus_numbers = find_bus_numbers(source, destination)
+            bus_numbers = find_bus_numbers(source, destination) # 출발지와 목적지에 맞는 버스 노선을 검색 후 버스 번호를 저장
             
             if bus_numbers:
-                bus_numbers_str = ", ".join(map(lambda x: f"{x}번", bus_numbers))
+                bus_numbers_str = ", ".join(map(lambda x: f"{x}번", bus_numbers)) # 버스 번호가 여러 개일시 , 를 이용하여 str에 저장
                 speak(f"{source}에서 {destination}까지 운행하는 버스는 {bus_numbers_str} 버스입니다.")
             else:
                 speak(f"{source}에서 {destination}까지 운행하는 버스가 없습니다.")
-        elif "에서" in user_input and "로" in user_input:
-            source = user_input.split("에서")[0].strip()
-            destination = user_input.split("에서")[1].split("로")[0].strip()
+        elif "에서" in user_input and "로" in user_input: # 음성이 '~에서 ~로'라고 입력 되면
+            source = user_input.split("에서")[0].strip() # 출발지
+            destination = user_input.split("에서")[1].split("으로")[0].strip() # 목적지
             
             # 띄어쓰기 없이 인식하도록 수정
-            source = preprocess_location(source)
-            destination = preprocess_location(destination)
+            source = preprocess_location(source) # 음성인식으로 입력된 단어에서 공백을 없앰 - 출발지
+            destination = preprocess_location(destination) # 음성인식으로 입력된 단어에서 공백을 없앰 - 목적지
             
             print(f"출발지: {source}, 목적지: {destination}")
-            bus_numbers = find_bus_numbers(source, destination)
+            bus_numbers = find_bus_numbers(source, destination) # 출발지와 목적지에 맞는 버스 노선을 검색 후 버스 번호를 저장
             
             if bus_numbers:
-                bus_numbers_str = ", ".join(map(lambda x: f"{x}번", bus_numbers))
+                bus_numbers_str = ", ".join(map(lambda x: f"{x}번", bus_numbers)) # 버스 번호가 여러 개일시 , 를 이용하여 str에 저장
                 speak(f"{source}에서 {destination}까지 운행하는 버스는 {bus_numbers_str} 버스입니다.")
             else:
                 speak(f"{source}에서 {destination}까지 운행하는 버스가 없습니다.")
